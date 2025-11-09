@@ -1,0 +1,114 @@
+(* ======================================================= *)
+(* CarTraC - ProVerif model                                *)
+(* Secrecy + reachability + non-repudiation (DY attacker)  *)
+(* ======================================================= *)
+
+set traceDisplay = long.
+set attacker = active.
+
+(* -------------------- Types -------------------- *)
+type skey. (* Signing / long-term private keys *)
+type pkey. (* Public keys corresponding to skey *)
+type key.  (* Symmetric key (AES-GCM style) *)
+
+(* -------------------- Channels -------------------- *)
+free v2v_chan : channel.       (* Public V2V broadcast channel - DY-controlled *)
+free ta_chan  : channel [private]. (* Internal TA processing channel, not visible to attacker *)
+
+(* -------------------- Cryptographic primitives -------------------- *)
+
+(* Asymmetric encryption for other use (not used here but kept) *)
+fun pk(skey): pkey.
+fun aenc(bitstring, pkey): bitstring.
+reduc forall m: bitstring, k: skey; adec(aenc(m, pk(k)), k) = m.
+
+(* Signatures *)
+fun sign(bitstring, skey): bitstring.
+reduc forall m: bitstring, k: skey; checksign(sign(m, k), pk(k)) = m.
+reduc forall m: bitstring, k: skey; getmess(sign(m, k)) = m.
+
+(* Symmetric authenticated encryption (AES-GCM abstracted) *)
+fun senc(bitstring, key) : bitstring.
+reduc forall m:bitstring, k:key; sdec(senc(m,k), k) = m.
+
+(* -------------------- Long-term keys & constants -------------------- *)
+
+(* Vehicle 1 signing key stored in TPM, not leaked *)
+free sk_V1 : skey [private].
+
+(* Trusted Authority symmetric decryption key stored at TA only *)
+free K_TA : key [private].
+
+(* Public identifier / pseudonym and crash data for Vehicle 1 *)
+free pseudonym_V1 : bitstring [private]. (* pseudonymous vehicle ID *)
+free crashData_V1 : bitstring [private]. (* crash-related data, must remain secret *)
+
+(* -------------------- Events -------------------- *)
+
+(* Existing events *)
+event crash_detected(bitstring, bitstring).  (* (pseudonym, data) *)
+event ta_received(bitstring, bitstring).     (* (pseudonym, data) *)
+event success.                               (* simple reachability marker *)
+
+(* New events for non-repudiation reasoning *)
+event v1_signs(bitstring).   (* Vehicle 1 signs ciphertext ciph *)
+event ta_accepts(bitstring). (* TA accepts a signature as valid for ciphertext ciph *)
+
+(* -------------------- Vehicle process -------------------- *)
+
+let Vehicle =
+    event crash_detected(pseudonym_V1, crashData_V1);
+    let payload: bitstring = (pseudonym_V1, crashData_V1) in
+    let ciph: bitstring = senc(payload, K_TA) in
+    (* Non-repudiation: record that V1 signs this specific ciphertext *)
+    event v1_signs(ciph);
+    let sm: bitstring = sign(ciph, sk_V1) in
+    out(v2v_chan, sm).
+
+(* -------------------- Cooperative relay process -------------------- *)
+
+let Relay =
+    in(v2v_chan, msg:bitstring);
+    out(v2v_chan, msg).
+
+(* -------------------- Trusted Authority process -------------------- *)
+
+let TA =
+    in(v2v_chan, sm:bitstring);
+    (* If signature verification succeeds, TA accepts ciphertext as from V1 *)
+    let ciph:bitstring = checksign(sm, pk(sk_V1)) in
+    event ta_accepts(ciph);
+    let (p:bitstring, d:bitstring) = sdec(ciph, K_TA) in
+    event ta_received(p, d);
+    event success;
+    out(ta_chan, (p, d)).
+
+(* -------------------- Security queries -------------------- *)
+
+(* Secrecy of crash data *)
+query attacker(crashData_V1).
+
+(* Secrecy of Vehicle 1's signing key *)
+query attacker(sk_V1).
+
+(* Reachability *)
+query event(success).
+
+(* Authenticity crash_detected -> ta_received *)
+query p: bitstring, d: bitstring;
+      event(ta_received(p, d)) ==> event(crash_detected(p, d)).
+
+(* Non-repudiation of origin (non-injective) *)
+query c: bitstring;
+      event(ta_accepts(c)) ==> event(v1_signs(c)).
+
+(* Stronger, injective version *)
+query c: bitstring;
+      inj-event(ta_accepts(c)) ==> event(v1_signs(c)).
+
+(* -------------------- Main process -------------------- *)
+process
+     Vehicle
+  |  TA
+  |  Relay
+  |  Relay
