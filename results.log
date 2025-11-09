@@ -1,3 +1,5 @@
+1- Process without nonce
+
 Process 0 (that is, the initial process):
 (
     {1}event crash_detected(pseudonym_V1,crashData_V1);
@@ -187,6 +189,340 @@ Query not attacker(sk_V1[]) is true.
 Query not event(success) is false.
 
 Query event(ta_received(p_1,d_1)) ==> event(crash_detected(p_1,d_1)) is true.
+
+2 - Process with nonce
+Process 0 (that is, the initial process):
+(
+    {1}event crash_detected(pseudonym_V1,crashData_V1);
+    {2}out(v_ta_chan, (collision_nonce_req_tag,pseudonym_V1));
+    {3}in(v_ta_chan, n: bitstring);
+    {4}let payload: bitstring = (pseudonym_V1,crashData_V1) in
+    {5}let securemessage: bitstring = senc(payload,K_TA) in
+    {6}let msg_with_nonce: bitstring = (n,securemessage) in
+    {7}event v1_signs(msg_with_nonce);
+    {8}let sm: bitstring = sign(msg_with_nonce,sk_V1) in
+    {9}out(v2v_chan, sm)
+) | (
+    {10}in(v_ta_chan, req: bitstring);
+    {11}new n_1: bitstring;
+    {12}event ta_issues_nonce(n_1);
+    {13}insert nonce_table(n_1);
+    {14}out(v_ta_chan, n_1);
+    {15}in(v2v_chan, sm_1: bitstring);
+    {16}let msg_with_nonce_1: bitstring = checksign(sm_1,pk(sk_V1)) in
+    {17}event ta_sees_nonce_in_msg(getmess(sm_1));
+    {18}let (n2: bitstring,securemessage_1: bitstring) = msg_with_nonce_1 in
+    {24}get nonce_table(n2_1: bitstring) in
+    {19}event ta_accepts(msg_with_nonce_1);
+    {20}let (p: bitstring,d: bitstring) = sdec(securemessage_1,K_TA) in
+    {21}event ta_received(p,d);
+    {22}event success;
+    {23}out(ta_chan, (p,d))
+) | (
+    {25}in(v2v_chan, msg: bitstring);
+    {26}out(v2v_chan, msg)
+) | (
+    {27}in(v2v_chan, msg_1: bitstring);
+    {28}out(v2v_chan, msg_1)
+)
+
+-- Query not attacker(crashData_V1[]) in process 0.
+Translating the process into Horn clauses...
+Completing...
+Starting query not attacker(crashData_V1[])
+RESULT not attacker(crashData_V1[]) is true.
+-- Query not attacker(sk_V1[]) in process 0.
+Translating the process into Horn clauses...
+Completing...
+Starting query not attacker(sk_V1[])
+RESULT not attacker(sk_V1[]) is true.
+-- Query not event(success) in process 0.
+Translating the process into Horn clauses...
+Completing...
+Starting query not event(success)
+goal reachable: event(success)
+
+Derivation:
+Abbreviations:
+n_2 = n_1[req = req_1]
+
+1. The attacker has some term req_2.
+attacker(req_2).
+
+2. The attacker has some term n2_2.
+attacker(n2_2).
+
+3. The message n2_2 that the attacker may have by 2 may be received at input {3}.
+So the message sign((n2_2,senc((pseudonym_V1[],crashData_V1[]),K_TA[])),sk_V1[]) may be sent to the attacker at output {9}.
+attacker(sign((n2_2,senc((pseudonym_V1[],crashData_V1[]),K_TA[])),sk_V1[])).
+
+4. The attacker has some term req_1.
+attacker(req_1).
+
+5. The message req_1 that the attacker may have by 4 may be received at input {10}.
+So the entry nonce_table(n_2) may be inserted in a table at insert {13}.
+table(nonce_table(n_2)).
+
+6. The message req_2 that the attacker may have by 1 may be received at input {10}.
+The message sign((n2_2,senc((pseudonym_V1[],crashData_V1[]),K_TA[])),sk_V1[]) that the attacker may have by 3 may be received at input {15}.
+The entry nonce_table(n_2) that may be in a table by 5 may be read at get {24}.
+So event success may be executed at {22}.
+event(success).
+
+7. By 6, event(success).
+The goal is reached, represented in the following fact:
+event(success).
+
+
+Unified req_1 with req_2
+The clause after UnifyDerivationPrecise is
+event(success)
+This clause still contradicts the query.
+Initial state
+
+Additional knowledge of the attacker:
+collision_nonce_req_tag
+v2v_chan
+v_ta_chan
+a
+a_1
+--------------------------------------------------------------
+New processes:
+    (
+        event crash_detected(pseudonym_V1,crashData_V1);
+        out(v_ta_chan, (collision_nonce_req_tag,pseudonym_V1));
+        in(v_ta_chan, n: bitstring);
+        let payload: bitstring = (pseudonym_V1,crashData_V1) in
+        let securemessage: bitstring = senc(payload,K_TA) in
+        let msg_with_nonce: bitstring = (n,securemessage) in
+        event v1_signs(msg_with_nonce);
+        let sm: bitstring = sign(msg_with_nonce,sk_V1) in
+        out(v2v_chan, sm)
+    ) | (
+        in(v_ta_chan, req: bitstring);
+        new n_1: bitstring;
+        event ta_issues_nonce(n_1);
+        insert nonce_table(n_1);
+        out(v_ta_chan, n_1);
+        in(v2v_chan, sm_1: bitstring);
+        let msg_with_nonce_1: bitstring = checksign(sm_1,pk(sk_V1)) in
+        event ta_sees_nonce_in_msg(getmess(sm_1));
+        let (n2: bitstring,securemessage_1: bitstring) = msg_with_nonce_1 in
+        get nonce_table(n2_1: bitstring) in
+        event ta_accepts(msg_with_nonce_1);
+        let (p: bitstring,d: bitstring) = sdec(securemessage_1,K_TA) in
+        event ta_received(p,d);
+        event success;
+        out(ta_chan, (p,d))
+    ) | (
+        in(v2v_chan, msg: bitstring);
+        out(v2v_chan, msg)
+    ) | (
+        in(v2v_chan, msg_1: bitstring);
+        out(v2v_chan, msg_1)
+    )
+
+--------------------------------------------------------------
+1st process: Reduction |
+
+2nd process: Reduction |
+
+3rd process: Reduction |
+
+4th process: Beginning of process Relay
+
+3rd process: Beginning of process Relay
+
+2nd process: Beginning of process TA
+
+1st process: Beginning of process Vehicle
+
+1st process: event crash_detected(pseudonym_V1,crashData_V1) executed
+
+1st process: out(v_ta_chan, (~M,~M_1)) with ~M = collision_nonce_req_tag, ~M_1 = pseudonym_V1 done
+
+Additional knowledge of the attacker:
+~M_1 = pseudonym_V1
+--------------------------------------------------------------
+New processes:
+(
+    in(v_ta_chan, n: bitstring);
+    let payload: bitstring = (pseudonym_V1,crashData_V1) in
+    let securemessage: bitstring = senc(payload,K_TA) in
+    let msg_with_nonce: bitstring = (n,securemessage) in
+    event v1_signs(msg_with_nonce);
+    let sm: bitstring = sign(msg_with_nonce,sk_V1) in
+    out(v2v_chan, sm)
+) | (
+    in(v_ta_chan, req: bitstring);
+    new n_1: bitstring;
+    event ta_issues_nonce(n_1);
+    insert nonce_table(n_1);
+    out(v_ta_chan, n_1);
+    in(v2v_chan, sm_1: bitstring);
+    let msg_with_nonce_1: bitstring = checksign(sm_1,pk(sk_V1)) in
+    event ta_sees_nonce_in_msg(getmess(sm_1));
+    let (n2: bitstring,securemessage_1: bitstring) = msg_with_nonce_1 in
+    get nonce_table(n2_1: bitstring) in
+    event ta_accepts(msg_with_nonce_1);
+    let (p: bitstring,d: bitstring) = sdec(securemessage_1,K_TA) in
+    event ta_received(p,d);
+    event success;
+    out(ta_chan, (p,d))
+) | (
+    in(v2v_chan, msg: bitstring);
+    out(v2v_chan, msg)
+) | (
+    in(v2v_chan, msg_1: bitstring);
+    out(v2v_chan, msg_1)
+)
+
+--------------------------------------------------------------
+1st process: in(v_ta_chan, n: bitstring) done with message a
+
+1st process: let payload: bitstring = (pseudonym_V1,crashData_V1) succeeds
+
+1st process: let securemessage: bitstring = senc((pseudonym_V1,crashData_V1),K_TA) succeeds
+
+1st process: let msg_with_nonce: bitstring = (a,senc((pseudonym_V1,crashData_V1),K_TA)) succeeds
+
+1st process: event v1_signs((a,senc((pseudonym_V1,crashData_V1),K_TA))) executed
+
+1st process: let sm: bitstring = sign((a,senc((pseudonym_V1,crashData_V1),K_TA)),sk_V1) succeeds
+
+1st process: out(v2v_chan, ~M_2) with ~M_2 = sign((a,senc((pseudonym_V1,crashData_V1),K_TA)),sk_V1) done
+
+Additional knowledge of the attacker:
+~M_2 = sign((a,senc((pseudonym_V1,crashData_V1),K_TA)),sk_V1)
+--------------------------------------------------------------
+1st process: Reduction 0
+
+New processes:
+(
+    in(v_ta_chan, req: bitstring);
+    new n_1: bitstring;
+    event ta_issues_nonce(n_1);
+    insert nonce_table(n_1);
+    out(v_ta_chan, n_1);
+    in(v2v_chan, sm_1: bitstring);
+    let msg_with_nonce_1: bitstring = checksign(sm_1,pk(sk_V1)) in
+    event ta_sees_nonce_in_msg(getmess(sm_1));
+    let (n2: bitstring,securemessage_1: bitstring) = msg_with_nonce_1 in
+    get nonce_table(n2_1: bitstring) in
+    event ta_accepts(msg_with_nonce_1);
+    let (p: bitstring,d: bitstring) = sdec(securemessage_1,K_TA) in
+    event ta_received(p,d);
+    event success;
+    out(ta_chan, (p,d))
+) | (
+    in(v2v_chan, msg: bitstring);
+    out(v2v_chan, msg)
+) | (
+    in(v2v_chan, msg_1: bitstring);
+    out(v2v_chan, msg_1)
+)
+
+--------------------------------------------------------------
+1st process: in(v_ta_chan, req: bitstring) done with message a_1
+
+1st process: new n_1: bitstring creating n_3
+
+1st process: event ta_issues_nonce(n_3) executed
+
+1st process: insert nonce_table(n_3) done
+
+1st process: out(v_ta_chan, ~M_3) with ~M_3 = n_3 done
+
+Additional knowledge of the attacker:
+~M_3 = n_3
+--------------------------------------------------------------
+New processes:
+(
+    in(v2v_chan, sm_1: bitstring);
+    let msg_with_nonce_1: bitstring = checksign(sm_1,pk(sk_V1)) in
+    event ta_sees_nonce_in_msg(getmess(sm_1));
+    let (n2: bitstring,securemessage_1: bitstring) = msg_with_nonce_1 in
+    get nonce_table(n2_1: bitstring) in
+    event ta_accepts(msg_with_nonce_1);
+    let (p: bitstring,d: bitstring) = sdec(securemessage_1,K_TA) in
+    event ta_received(p,d);
+    event success;
+    out(ta_chan, (p,d))
+) | (
+    in(v2v_chan, msg: bitstring);
+    out(v2v_chan, msg)
+) | (
+    in(v2v_chan, msg_1: bitstring);
+    out(v2v_chan, msg_1)
+)
+
+--------------------------------------------------------------
+1st process: in(v2v_chan, sm_1: bitstring) done with message ~M_2 = sign((a,senc((pseudonym_V1,crashData_V1),K_TA)),sk_V1)
+
+1st process: let msg_with_nonce_1: bitstring = (a,senc((pseudonym_V1,crashData_V1),K_TA)) succeeds
+
+1st process: event ta_sees_nonce_in_msg((a,senc((pseudonym_V1,crashData_V1),K_TA))) executed
+
+1st process: let (n2: bitstring,securemessage_1: bitstring) = (a,senc((pseudonym_V1,crashData_V1),K_TA)) succeeds
+
+1st process: get nonce_table(n2_1: bitstring) done with entry nonce_table(n_3)
+
+1st process: event ta_accepts((a,senc((pseudonym_V1,crashData_V1),K_TA))) executed
+
+1st process: let (p: bitstring,d: bitstring) = (pseudonym_V1,crashData_V1) succeeds
+
+1st process: event ta_received(pseudonym_V1,crashData_V1) executed
+
+1st process: event success executed; it is a goal
+
+New processes:
+(
+    out(ta_chan, (pseudonym_V1,crashData_V1))
+) | (
+    in(v2v_chan, msg: bitstring);
+    out(v2v_chan, msg)
+) | (
+    in(v2v_chan, msg_1: bitstring);
+    out(v2v_chan, msg_1)
+)
+
+--------------------------------------------------------------
+The event success is executed at {22}.
+A trace has been found.
+RESULT not event(success) is false.
+-- Query event(ta_received(p_1,d_1)) ==> event(crash_detected(p_1,d_1)) in process 0.
+Translating the process into Horn clauses...
+Completing...
+Starting query event(ta_received(p_1,d_1)) ==> event(crash_detected(p_1,d_1))
+goal reachable: b-event(crash_detected(pseudonym_V1[],crashData_V1[])) -> event(ta_received(pseudonym_V1[],crashData_V1[]))
+RESULT event(ta_received(p_1,d_1)) ==> event(crash_detected(p_1,d_1)) is true.
+-- Query event(ta_accepts(c)) ==> event(v1_signs(c)) in process 0.
+Translating the process into Horn clauses...
+Completing...
+Starting query event(ta_accepts(c)) ==> event(v1_signs(c))
+goal reachable: b-event(v1_signs((n2_2,senc((pseudonym_V1[],crashData_V1[]),K_TA[])))) && attacker(n2_2) -> event(ta_accepts((n2_2,senc((pseudonym_V1[],crashData_V1[]),K_TA[]))))
+RESULT event(ta_accepts(c)) ==> event(v1_signs(c)) is true.
+-- Query event(ta_accepts(c)) ==> event(v1_signs(c)) in process 0.
+Translating the process into Horn clauses...
+Completing...
+Starting query event(ta_accepts(c)) ==> event(v1_signs(c))
+goal reachable: b-event(v1_signs((n2_2,senc((pseudonym_V1[],crashData_V1[]),K_TA[])))) && attacker(n2_2) -> event(ta_accepts((n2_2,senc((pseudonym_V1[],crashData_V1[]),K_TA[]))))
+RESULT event(ta_accepts(c)) ==> event(v1_signs(c)) is true.
+
+--------------------------------------------------------------
+Verification summary:
+
+Query not attacker(crashData_V1[]) is true.
+
+Query not attacker(sk_V1[]) is true.
+
+Query not event(success) is false.
+
+Query event(ta_received(p_1,d_1)) ==> event(crash_detected(p_1,d_1)) is true.
+
+Query event(ta_accepts(c)) ==> event(v1_signs(c)) is true.
+
+Query event(ta_accepts(c)) ==> event(v1_signs(c)) is true.
 
 Query event(ta_accepts(c)) ==> event(v1_signs(c)) is true.
 
