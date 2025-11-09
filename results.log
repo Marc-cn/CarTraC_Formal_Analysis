@@ -1,0 +1,195 @@
+Process 0 (that is, the initial process):
+(
+    {1}event crash_detected(pseudonym_V1,crashData_V1);
+    {2}let payload: bitstring = (pseudonym_V1,crashData_V1) in
+    {3}let ciph: bitstring = senc(payload,K_TA) in
+    {4}event v1_signs(ciph);
+    {5}let sm: bitstring = sign(ciph,sk_V1) in
+    {6}out(v2v_chan, sm)
+) | (
+    {7}in(v2v_chan, sm_1: bitstring);
+    {8}let ciph_1: bitstring = checksign(sm_1,pk(sk_V1)) in
+    {9}event ta_accepts(ciph_1);
+    {10}let (p: bitstring,d: bitstring) = sdec(ciph_1,K_TA) in
+    {11}event ta_received(p,d);
+    {12}event success;
+    {13}out(ta_chan, (p,d))
+) | (
+    {14}in(v2v_chan, msg: bitstring);
+    {15}out(v2v_chan, msg)
+) | (
+    {16}in(v2v_chan, msg_1: bitstring);
+    {17}out(v2v_chan, msg_1)
+)
+
+-- Query not attacker(crashData_V1[]) in process 0.
+Translating the process into Horn clauses...
+Completing...
+Starting query not attacker(crashData_V1[])
+RESULT not attacker(crashData_V1[]) is true.
+-- Query not attacker(sk_V1[]) in process 0.
+Translating the process into Horn clauses...
+Completing...
+Starting query not attacker(sk_V1[])
+RESULT not attacker(sk_V1[]) is true.
+-- Query not event(success) in process 0.
+Translating the process into Horn clauses...
+Completing...
+Starting query not event(success)
+goal reachable: event(success)
+
+Derivation:
+
+1. The message sign(senc((pseudonym_V1[],crashData_V1[]),K_TA[]),sk_V1[]) may be sent to the attacker at output {6}.
+attacker(sign(senc((pseudonym_V1[],crashData_V1[]),K_TA[]),sk_V1[])).
+
+2. The message sign(senc((pseudonym_V1[],crashData_V1[]),K_TA[]),sk_V1[]) that the attacker may have by 1 may be received at input {7}.
+So event success may be executed at {12}.
+event(success).
+
+3. By 2, event(success).
+The goal is reached, represented in the following fact:
+event(success).
+
+
+Initial state
+
+Additional knowledge of the attacker:
+v2v_chan
+--------------------------------------------------------------
+New processes:
+    (
+        event crash_detected(pseudonym_V1,crashData_V1);
+        let payload: bitstring = (pseudonym_V1,crashData_V1) in
+        let ciph: bitstring = senc(payload,K_TA) in
+        event v1_signs(ciph);
+        let sm: bitstring = sign(ciph,sk_V1) in
+        out(v2v_chan, sm)
+    ) | (
+        in(v2v_chan, sm_1: bitstring);
+        let ciph_1: bitstring = checksign(sm_1,pk(sk_V1)) in
+        event ta_accepts(ciph_1);
+        let (p: bitstring,d: bitstring) = sdec(ciph_1,K_TA) in
+        event ta_received(p,d);
+        event success;
+        out(ta_chan, (p,d))
+    ) | (
+        in(v2v_chan, msg: bitstring);
+        out(v2v_chan, msg)
+    ) | (
+        in(v2v_chan, msg_1: bitstring);
+        out(v2v_chan, msg_1)
+    )
+
+--------------------------------------------------------------
+1st process: Reduction |
+
+2nd process: Reduction |
+
+3rd process: Reduction |
+
+4th process: Beginning of process Relay
+
+3rd process: Beginning of process Relay
+
+2nd process: Beginning of process TA
+
+1st process: Beginning of process Vehicle
+
+1st process: event crash_detected(pseudonym_V1,crashData_V1) executed
+
+1st process: let payload: bitstring = (pseudonym_V1,crashData_V1) succeeds
+
+1st process: let ciph: bitstring = senc((pseudonym_V1,crashData_V1),K_TA) succeeds
+
+1st process: event v1_signs(senc((pseudonym_V1,crashData_V1),K_TA)) executed
+
+1st process: let sm: bitstring = sign(senc((pseudonym_V1,crashData_V1),K_TA),sk_V1) succeeds
+
+1st process: out(v2v_chan, ~M) with ~M = sign(senc((pseudonym_V1,crashData_V1),K_TA),sk_V1) done
+
+Additional knowledge of the attacker:
+~M = sign(senc((pseudonym_V1,crashData_V1),K_TA),sk_V1)
+--------------------------------------------------------------
+1st process: Reduction 0
+
+New processes:
+(
+    in(v2v_chan, sm_1: bitstring);
+    let ciph_1: bitstring = checksign(sm_1,pk(sk_V1)) in
+    event ta_accepts(ciph_1);
+    let (p: bitstring,d: bitstring) = sdec(ciph_1,K_TA) in
+    event ta_received(p,d);
+    event success;
+    out(ta_chan, (p,d))
+) | (
+    in(v2v_chan, msg: bitstring);
+    out(v2v_chan, msg)
+) | (
+    in(v2v_chan, msg_1: bitstring);
+    out(v2v_chan, msg_1)
+)
+
+--------------------------------------------------------------
+1st process: in(v2v_chan, sm_1: bitstring) done with message ~M = sign(senc((pseudonym_V1,crashData_V1),K_TA),sk_V1)
+
+1st process: let ciph_1: bitstring = senc((pseudonym_V1,crashData_V1),K_TA) succeeds
+
+1st process: event ta_accepts(senc((pseudonym_V1,crashData_V1),K_TA)) executed
+
+1st process: let (p: bitstring,d: bitstring) = (pseudonym_V1,crashData_V1) succeeds
+
+1st process: event ta_received(pseudonym_V1,crashData_V1) executed
+
+1st process: event success executed; it is a goal
+
+New processes:
+(
+    out(ta_chan, (pseudonym_V1,crashData_V1))
+) | (
+    in(v2v_chan, msg: bitstring);
+    out(v2v_chan, msg)
+) | (
+    in(v2v_chan, msg_1: bitstring);
+    out(v2v_chan, msg_1)
+)
+
+--------------------------------------------------------------
+The event success is executed at {12}.
+A trace has been found.
+RESULT not event(success) is false.
+-- Query event(ta_received(p_1,d_1)) ==> event(crash_detected(p_1,d_1)) in process 0.
+Translating the process into Horn clauses...
+Completing...
+Starting query event(ta_received(p_1,d_1)) ==> event(crash_detected(p_1,d_1))
+goal reachable: b-event(crash_detected(pseudonym_V1[],crashData_V1[])) -> event(ta_received(pseudonym_V1[],crashData_V1[]))
+RESULT event(ta_received(p_1,d_1)) ==> event(crash_detected(p_1,d_1)) is true.
+-- Query event(ta_accepts(c)) ==> event(v1_signs(c)) in process 0.
+Translating the process into Horn clauses...
+Completing...
+Starting query event(ta_accepts(c)) ==> event(v1_signs(c))
+goal reachable: b-event(v1_signs(senc((pseudonym_V1[],crashData_V1[]),K_TA[]))) -> event(ta_accepts(senc((pseudonym_V1[],crashData_V1[]),K_TA[])))
+RESULT event(ta_accepts(c)) ==> event(v1_signs(c)) is true.
+-- Query event(ta_accepts(c)) ==> event(v1_signs(c)) in process 0.
+Translating the process into Horn clauses...
+Completing...
+Starting query event(ta_accepts(c)) ==> event(v1_signs(c))
+goal reachable: b-event(v1_signs(senc((pseudonym_V1[],crashData_V1[]),K_TA[]))) -> event(ta_accepts(senc((pseudonym_V1[],crashData_V1[]),K_TA[])))
+RESULT event(ta_accepts(c)) ==> event(v1_signs(c)) is true.
+
+--------------------------------------------------------------
+Verification summary:
+
+Query not attacker(crashData_V1[]) is true.
+
+Query not attacker(sk_V1[]) is true.
+
+Query not event(success) is false.
+
+Query event(ta_received(p_1,d_1)) ==> event(crash_detected(p_1,d_1)) is true.
+
+Query event(ta_accepts(c)) ==> event(v1_signs(c)) is true.
+
+Query event(ta_accepts(c)) ==> event(v1_signs(c)) is true.
+
+--------------------------------------------------------------
