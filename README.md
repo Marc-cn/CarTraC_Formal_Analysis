@@ -20,6 +20,7 @@ The model verifies three main security properties:
 | File | Description |
 |------|--------------|
 | `CarTraC.pv` | Main ProVerif model including events, cryptographic primitives, and queries. |
+| `CarTraC_with_nonce.pv` | Main ProVerif model including events, cryptographic primitives, queries, and the nonce request to the TA. |
 | `README.md` | This documentation file. |
 | `results.log` *(optional)* | Example ProVerif output showing verified properties. |
 
@@ -38,3 +39,7 @@ Clone or download the repository and run:
 
 ```bash
 proverif CarTraC.pv
+
+or
+
+proverif CarTraC_with_nonce.pv
