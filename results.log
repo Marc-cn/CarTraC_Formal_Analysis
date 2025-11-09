@@ -1,4 +1,4 @@
-1- Process without nonce
+**1- Process without nonce**
 
 Process 0 (that is, the initial process):
 (
@@ -190,7 +190,8 @@ Query not event(success) is false.
 
 Query event(ta_received(p_1,d_1)) ==> event(crash_detected(p_1,d_1)) is true.
 
-2 - Process with nonce
+**2 - Process with nonce**
+
 Process 0 (that is, the initial process):
 (
     {1}event crash_detected(pseudonym_V1,crashData_V1);
